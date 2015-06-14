@@ -1,0 +1,16 @@
+{
+  "name": "MarkdownServer",
+  "version": "0.1",
+  "authors": [
+    "Kenta Kase <kesin1202000@gmail.com>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
