@@ -9,7 +9,26 @@ marked.setOptions({
   smartypants: false
 })
 
-markdown = $('#markdown').text()
-rendered_html = marked(markdown)
+Editor = Backbone.Model.extend({
+  initialize: ()->
+    this.markdown = ''
+})
+EditorView = Backbone.View.extend({
+  el: '#markdown'
+  events:
+    'keyup': 'update_model'
+  initialize: ()->
+    this.listenTo(this.model, 'change', this.render)
+    this.render()
 
-$('#rendered-html').html(rendered_html)
+  update_model: ()->
+    this.model.set({markdown: this.$('[name=raw-text]').val() })
+  render: ()->
+    markdown = this.model.get('markdown')
+    if markdown
+      html = marked(markdown)
+      $('#rendered-html').html(html)
+})
+
+editor  = new Editor()
+editorView = new EditorView({model: editor})
