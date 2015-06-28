@@ -16,9 +16,9 @@ module.exports = function(grunt) {
       },
       glob_to_multiple: {
         expand: true,
-        cwd: 'view/',
+        cwd: 'public/coffee/',
         src: ['*.coffee'],
-        dest: 'view/',
+        dest: 'public/js/',
         ext:  '.js',
       }
     },
@@ -29,7 +29,7 @@ module.exports = function(grunt) {
         files: ['view/*'] // ウォッチ対象として、ディレクトリ配下の*.htmlを指定
       },
       coffee: {
-          files: ['view/*.coffee'],
+          files: ['public/coffee/*.coffee'],
           tasks: ['coffee'],
       },
       css: {
