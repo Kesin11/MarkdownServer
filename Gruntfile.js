@@ -26,7 +26,7 @@ module.exports = function(grunt) {
     // grunt-contrib-watchの設定(ウォッチ対象の設定)
     watch: {
       html_files: {
-        files: ['view/*'] // ウォッチ対象として、ディレクトリ配下の*.htmlを指定
+        files: ['views/*'] // ウォッチ対象として、ディレクトリ配下の*.htmlを指定
       },
       coffee: {
           files: ['public/coffee/*.coffee'],
