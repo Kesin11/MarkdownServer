@@ -19,7 +19,7 @@ EditorView = Backbone.View.extend({
     'keyup': 'update_model'
   initialize: ()->
     this.listenTo(this.model, 'change', this.render)
-    this.render()
+    autosize(this.$('textarea')) # textareaの自動拡張プラグイン
 
   update_model: ()->
     this.model.set({markdown: this.$('[name=raw-text]').val() })
