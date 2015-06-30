@@ -9,14 +9,20 @@
     <script src="/bower/jquery/dist/jquery.min.js"></script>
     <link href="/bower/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- optional theme -->
-    <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap&#45;theme.min.css" /> -->
     <script src="/bower/bootstrap/dist/js/bootstrap.min.js"></script>
 </head>
 <body>
-<div id="markdown">
-  <textarea name="raw-text" value=""></textarea>
-</div>
-<div id="rendered-html"></div>
+  <nav class="navbar navbar-default navbar-static-top">
+    <div class="navbar-header"><a href="/" class="navbar-brand">Markdown Server</a></div>
+  </nav>
+  <div class="container">
+    <div class="row">
+      <div id="markdown" class="col-md-6 col-sm-6">
+        <textarea class="form-control" rows="10" name="raw-text" value=""></textarea>
+      </div>
+      <div id="rendered-html" class="col-md-6 col-sm-6">
+      </div>
+    </div>
 </body>
 <script type="text/javascript" src="/bower/underscore/underscore-min.js"></script>
 <script type="text/javascript" src="/bower/backbone/backbone-min.js"></script>
