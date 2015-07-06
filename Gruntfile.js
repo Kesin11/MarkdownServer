@@ -12,6 +12,7 @@ module.exports = function(grunt) {
     },
     coffee: {
       options: {
+        bare: true, // 名前空間を汚さないようにする機能をOFF
         sourceMap: true
       },
       glob_to_multiple: {
