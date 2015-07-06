@@ -17,8 +17,6 @@ EditorView = Backbone.View.extend({
   el: '#markdown'
   events:
     'keyup': 'update_model'
-    'click #authorizeButton': 'gapi_authorize'
-    'click #uploadButton': 'upload_text'
   initialize: ()->
     this.listenTo(this.model, 'change', this.render)
     autosize(this.$('textarea')) # textareaの自動拡張プラグイン
@@ -30,10 +28,6 @@ EditorView = Backbone.View.extend({
     if markdown
       html = marked(markdown)
       $('#rendered-html').html(html)
-  gapi_authorize: ()->
-    GDrive.prototype.checkAuth()
-  upload_text: ()->
-    GDrive.prototype.uploadFile()
 })
 
 editor  = new Editor()

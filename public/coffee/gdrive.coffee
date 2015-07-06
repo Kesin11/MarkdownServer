@@ -3,36 +3,6 @@ class GDrive
   '.apps.googleusercontent.com'
   SCOPES: 'https://www.googleapis.com/auth/drive'
 
-  # Check if the current user has authorized the application.
-  checkAuth: () ->
-    that = this
-    gapi.auth.checkSessionState({
-      'client_id': this.CLIENT_ID, 'session_state': null},
-      (isLoggedOut) ->
-        if !isLoggedOut
-          console.log(that)
-          gapi.auth.authorize({
-            'client_id': that.CLIENT_ID,
-            'scope': that.SCOPES,
-            'immediate': false },
-            that.handleAuthResult
-          )
-        else
-          console.log('You already logged in')
-      )
-
-
-
-   # Called when authorization server replies.
-   # @param {Object} authResult Authorization result.
-  handleAuthResult: (authResult) ->
-    that = this
-    console.log(authResult)
-    if (authResult && !authResult.error)
-      # Access token has been successfully retrieved,
-      # requests can be sent to the API.
-      console.log("authorized")
-
    # Start the file upload.
    # @param {Object} evt Arguments from the file selector.
   uploadFile: (evt) ->
@@ -90,3 +60,51 @@ class GDrive
 
   utf8_to_b64: (str) ->
     window.btoa( unescape(encodeURIComponent( str ) ) )
+
+GDriveModel = Backbone.Model.extend({
+  initialize: ()->
+    this.CLIENT_ID = '966231612988-cmob8calt2b646p4sddlb4410q2eekmq'
+    + '.apps.googleusercontent.com'
+    this.SCOPES = 'https://www.googleapis.com/auth/drive'
+    this.authResult = this.authorize()
+
+  authorize: ()->
+    that = this
+    return null unless gapi.auth
+
+    gapi.auth.authorize({
+      'client_id': this.CLIENT_ID,
+      'scope': this.SCOPES,
+      'immediate': true },
+      (authResult)->
+        # immediate: trueが失敗したときはflaseで再チャレンジ
+        # 今度はダイアログが開く
+        if (authResult && !authResult.error)
+          console.log("immediate true")
+          that.authResult = authResult
+        else
+          console.log("immediate false")
+          gapi.auth.authorize({
+            'client_id': that.CLIENT_ID,
+            'scope': that.SCOPES,
+            'immediate': false },
+            (authResult)->
+              that.authResult = authResult
+          )
+    )
+})
+GDriveView = Backbone.View.extend({
+  el: '#gdrive'
+  events:
+    'click [name=authorize-button]': 'gapi_authorize'
+    'click [name=upload-button]': 'upload_text'
+  initialize: ()->
+
+  gapi_authorize: ()->
+    this.model.authorize()
+  upload_text: ()->
+    GDrive.prototype.uploadFile()
+})
+
+gdriveModel = new GDriveModel()
+gdriveView = new GDriveView({model: gdriveModel})
