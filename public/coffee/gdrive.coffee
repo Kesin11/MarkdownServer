@@ -28,6 +28,23 @@ class GDrive
 
     return multipartRequestBody
 
+  insert: (title, content, callback) ->
+    console.log('insert file')
+    multipartRequestBody = this.requestBody(title, content)
+    request = gapi.client.request({
+      'path': '/upload/drive/v2/files',
+      'method': 'POST',
+      'params': {'uploadType': 'multipart'},
+      'headers': {
+        'Content-Type': 'multipart/mixed; boundary="' +
+        this.BOUNDARY + '"'
+      },
+      'body': multipartRequestBody})
+    if (!callback)
+      callback = (file) ->
+        console.log(file)
+    request.execute(callback)
+
   utf8_to_b64: (str) ->
     window.btoa( unescape(encodeURIComponent( str ) ) )
 
@@ -69,27 +86,11 @@ GDriveModel = Backbone.Model.extend({
 
     console.log(content)
     gapi.client.load('drive', 'v2', ->
-      that.insert(title, content)
-    )
-
-  insert: (title, content, callback) ->
-    that = this
-    console.log('insert file')
-    multipartRequestBody = this.gdrive.requestBody(title, content)
-    request = gapi.client.request({
-      'path': '/upload/drive/v2/files',
-      'method': 'POST',
-      'params': {'uploadType': 'multipart'},
-      'headers': {
-        'Content-Type': 'multipart/mixed; boundary="' +
-        this.gdrive.BOUNDARY + '"'
-      },
-      'body': multipartRequestBody})
-    if (!callback)
-      callback = (file) ->
+      that.gdrive.insert(title, content, (file)->
         console.log(file)
         that.file = file
-    request.execute(callback)
+        )
+    )
 })
 GDriveView = Backbone.View.extend({
   el: '#gdrive'
