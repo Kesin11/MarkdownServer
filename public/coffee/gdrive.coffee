@@ -29,7 +29,6 @@ class GDrive
     return multipartRequestBody
 
   insert: (title, content, callback) ->
-    console.log('insert file')
     multipartRequestBody = this.requestBody(title, content)
     request = gapi.client.request({
       'path': '/upload/drive/v2/files',
@@ -45,9 +44,25 @@ class GDrive
         console.log(file)
     request.execute(callback)
 
+  update: (fileId, title, content, callback) ->
+    console.log('update file')
+    multipartRequestBody = this.requestBody(title, content)
+    request = gapi.client.request({
+      'path': '/upload/drive/v2/files/' + fileId,
+      'method': 'PUT',
+      'params': {'uploadType': 'multipart'},
+      'headers': {
+        'Content-Type': 'multipart/mixed; boundary="' +
+        this.BOUNDARY + '"'
+      },
+      'body': multipartRequestBody})
+    if (!callback)
+      callback = (file) ->
+        console.log(file)
+    request.execute(callback)
+
   utf8_to_b64: (str) ->
     window.btoa( unescape(encodeURIComponent( str ) ) )
-
 
 GDriveModel = Backbone.Model.extend({
   initialize: ()->
@@ -67,10 +82,8 @@ GDriveModel = Backbone.Model.extend({
         # immediate: trueが失敗したときはflaseで再チャレンジ
         # 今度はダイアログが開く
         if (authResult && !authResult.error)
-          console.log("immediate true")
           that.authResult = authResult
         else
-          console.log("immediate false")
           gapi.auth.authorize({
             'client_id': this.gdrive.CLIENT_ID,
             'scope': this.gdrive.SCOPES,
@@ -81,13 +94,23 @@ GDriveModel = Backbone.Model.extend({
     )
 
   upload: (title, content) ->
-    that = this
-    console.log('upload file')
+    if this.file == null
+      this.insert(title, content)
+    else
+      this.update(title, content)
 
-    console.log(content)
+  insert: (title, content) ->
+    that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.insert(title, content, (file)->
-        console.log(file)
+        that.file = file
+        )
+    )
+
+  update: (title, content) ->
+    that = this
+    gapi.client.load('drive', 'v2', ->
+      that.gdrive.update(that.file.id, title, content, (file)->
         that.file = file
         )
     )
