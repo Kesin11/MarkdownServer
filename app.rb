@@ -3,7 +3,7 @@ require 'sinatra'
 require 'haml'
 
 configure :production do
-  set :GOOGLE_DRIVE_CLIENT_ID, ''
+  set :GOOGLE_DRIVE_CLIENT_ID, ENV['GOOGLE_DRIVE_CLIENT_ID']
 end
 
 configure :development do
