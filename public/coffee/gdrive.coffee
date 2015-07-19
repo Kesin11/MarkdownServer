@@ -1,6 +1,5 @@
 class GDrive
-  CLIENT_ID: '966231612988-cmob8calt2b646p4sddlb4410q2eekmq' +
-  '.apps.googleusercontent.com'
+  CLIENT_ID: GOOGLE_DRIVE_CLIENT_ID
   SCOPES: 'https://www.googleapis.com/auth/drive'
   BOUNDARY = '-------314159265358979323846'
 
