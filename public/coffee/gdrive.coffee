@@ -82,8 +82,10 @@ GDriveModel = Backbone.Model.extend({
         # immediate: trueが失敗したときはflaseで再チャレンジ
         # 今度はダイアログが開く
         if (authResult && !authResult.error)
+          console.log("immediate true")
           that.authResult = authResult
         else
+          console.log("immediate false")
           gapi.auth.authorize({
             'client_id': this.gdrive.CLIENT_ID,
             'scope': this.gdrive.SCOPES,
@@ -103,6 +105,8 @@ GDriveModel = Backbone.Model.extend({
     that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.insert(title, content, (file)->
+        console.log("insert file")
+        console.log(file)
         that.file = file
         )
     )
@@ -111,6 +115,8 @@ GDriveModel = Backbone.Model.extend({
     that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.update(that.file.id, title, content, (file)->
+        console.log("update file")
+        console.log(file)
         that.file = file
         )
     )
