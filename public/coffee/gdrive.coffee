@@ -69,7 +69,7 @@ GDriveModel = Backbone.Model.extend({
     this.authResult = this.authorize()
     this.file = null
 
-  authorize: ()->
+  authorize: (callback)->
     that = this
     return null unless gapi.auth
 
@@ -83,6 +83,8 @@ GDriveModel = Backbone.Model.extend({
         if (authResult && !authResult.error)
           console.log("immediate true")
           that.authResult = authResult
+          console.log(callback)
+          callback(authResult)
         else
           console.log("immediate false")
           gapi.auth.authorize({
@@ -91,6 +93,8 @@ GDriveModel = Backbone.Model.extend({
             'immediate': false },
             (authResult)->
               that.authResult = authResult
+              console.log(callback)
+              callback(authResult)
           )
     )
 
@@ -128,12 +132,33 @@ GDriveView = Backbone.View.extend({
   initialize: ()->
 
   gapi_authorize: ()->
-    this.model.authorize()
+    this.model.authorize(this.authorizeAlert)
   upload: ()->
     content = $('#markdown > textarea').val()
     title = 'test_file.txt'
     this.model.upload(title, content)
+  authorizeAlert: (authResult)->
+    console.log(authResult)
+    if authResult && !authResult.error
+      this.alertView.show("success", "Success GoogleDrive authorization")
+    else
+      this.alertView.show("warning", "Fail GoogleDrive authorization")
 })
 
+AlertView = Backbone.View.extend({
+  el: '#alert-region'
+
+  show: (context, message)->
+    alertDiv = $("<div></div>")
+        .addClass("alert alert-" + context)
+        .text(message)
+        .alert()
+    this.$el.append(alertDiv)
+    alertDiv.fadeTo(2000, 500).slideUp(500, ()->
+      alertDiv.alert('close')
+    )
+})
+
+alertView = new AlertView()
 gdriveModel = new GDriveModel()
-gdriveView = new GDriveView({model: gdriveModel})
+gdriveView = new GDriveView({model: gdriveModel, alertView: alertView})
