@@ -134,11 +134,10 @@ GDriveView = Backbone.View.extend({
   gapi_authorize: ()->
     this.model.authorize(this.authorizeAlert)
   upload: ()->
-    content = $('#markdown > textarea').val()
-    title = 'test_file.txt'
+    content = $('#markdown > div > textarea').val()
+    title = $('#markdown > div > [name=title]').val()
     this.model.upload(title, content)
   authorizeAlert: (authResult)->
-    console.log(authResult)
     if authResult && !authResult.error
       this.alertView.show("success", "Success GoogleDrive authorization")
     else
