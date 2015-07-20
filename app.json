@@ -1,0 +1,9 @@
+{
+  "name": "Markdown Server",
+  "description": "Simple Markdown editor in web browser with GoogleDrive",
+  "keywords": [
+    "Markdown",
+    "GoogleDrive",
+    "backbone.js"
+  ]
+}

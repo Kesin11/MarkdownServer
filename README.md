@@ -1,5 +1,7 @@
 MarkdownServer
 
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
 MarkdownServer is a simple editor for write markdown. It's implemented with javascript.
 
 # DEMO
