@@ -66,7 +66,6 @@ class GDrive
 GDriveModel = Backbone.Model.extend({
   initialize: ()->
     this.gdrive = new GDrive()
-    this.authResult = this.authorize()
     this.file = null
 
   authorize: (callback)->
@@ -82,8 +81,6 @@ GDriveModel = Backbone.Model.extend({
         # 今度はダイアログが開く
         if (authResult && !authResult.error)
           console.log("immediate true")
-          that.authResult = authResult
-          console.log(callback)
           callback(authResult)
         else
           console.log("immediate false")
@@ -92,8 +89,6 @@ GDriveModel = Backbone.Model.extend({
             'scope': that.gdrive.SCOPES,
             'immediate': false },
             (authResult)->
-              that.authResult = authResult
-              console.log(callback)
               callback(authResult)
           )
     )
