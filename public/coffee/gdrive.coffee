@@ -141,32 +141,21 @@ GDriveView = Backbone.View.extend({
     content = $('#markdown > div > textarea').val()
     title = $('#markdown > div > [name=title]').val()
     this.model.upload(title, content, this.uploadAlert)
+  updateDocumentLink: ()->
+    documentLink = $('#document-link').text(this.model.title)
+
+
   authorizeAlert: (authResult)->
     if authResult && !authResult.error
       this.alertView.show("success", "Success GoogleDrive authorization")
     else
       this.alertView.show("warning", "Fail GoogleDrive authorization")
   uploadAlert: (file, method)->
-    if file
+    if !file.error
       this.alertView.show("info", "Success " + method + "!")
     else
-      this.alertView.show("danger", "Fail" + method + "!")
+      this.alertView.show("danger", "Fail " + method + "!")
 })
 
-AlertView = Backbone.View.extend({
-  el: '#alert-region'
-
-  show: (context, message)->
-    alertDiv = $("<div></div>")
-        .addClass("alert alert-" + context)
-        .text(message)
-        .alert()
-    this.$el.append(alertDiv)
-    alertDiv.fadeTo(2000, 500).slideUp(500, ()->
-      alertDiv.alert('close')
-    )
-})
-
-alertView = new AlertView()
 gdriveModel = new GDriveModel()
 gdriveView = new GDriveView({model: gdriveModel, alertView: alertView})

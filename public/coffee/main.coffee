@@ -30,5 +30,20 @@ EditorView = Backbone.View.extend({
       $('#rendered-html').html(html)
 })
 
+AlertView = Backbone.View.extend({
+  el: '#alert-region'
+
+  show: (context, message)->
+    alertDiv = $("<div></div>")
+        .addClass("alert alert-" + context)
+        .text(message)
+        .alert()
+    this.$el.append(alertDiv)
+    alertDiv.fadeTo(2000, 500).slideUp(500, ()->
+      alertDiv.alert('close')
+    )
+})
+
 editor  = new Editor()
 editorView = new EditorView({model: editor})
+alertView = new AlertView()
