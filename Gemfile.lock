@@ -2,14 +2,9 @@ GEM
   remote: https://rubygems.org/
   specs:
     addressable (2.3.8)
-    coffee-script (2.4.1)
-      coffee-script-source
-      execjs
-    coffee-script-source (1.9.1.1)
     domain_name (0.5.24)
       unf (>= 0.0.5, < 1.0.0)
     excon (0.45.3)
-    execjs (2.5.2)
     foreman (0.78.0)
       thor (~> 0.19.1)
     haml (4.0.6)
@@ -39,7 +34,6 @@ GEM
       mime-types (>= 1.16, < 3.0)
       netrc (~> 0.7)
     rubyzip (1.1.7)
-    saas (0.1.1)
     sinatra (1.4.6)
       rack (~> 1.4)
       rack-protection (~> 1.4)
@@ -54,11 +48,9 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  coffee-script
   foreman
   haml
   heroku
-  saas
   sinatra
 
 BUNDLED WITH
