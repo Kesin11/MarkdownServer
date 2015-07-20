@@ -105,7 +105,7 @@ GDriveModel = Backbone.Model.extend({
       that.gdrive.insert(title, content, (file)->
         console.log("insert file")
         console.log(file)
-        that.file = file
+        that.set("file", file)
 
         callback(file, "insert")
         )
@@ -117,7 +117,7 @@ GDriveModel = Backbone.Model.extend({
       that.gdrive.update(that.file.id, title, content, (file)->
         console.log("update file")
         console.log(file)
-        that.file = file
+        that.set("file", file)
 
         callback(file, "update")
         )
@@ -129,6 +129,7 @@ GDriveView = Backbone.View.extend({
     'click [name=authorize-button]': 'gapi_authorize'
     'click [name=upload-button]': 'upload'
   initialize: ()->
+    this.listenTo(this.model, 'change', this.updateDocumentLink)
 
   gapi_authorize: ()->
     this.model.authorize(this.authorizeAlert)
@@ -136,10 +137,18 @@ GDriveView = Backbone.View.extend({
     content = $('#markdown > div > textarea').val()
     title = $('#markdown > div > [name=title]').val()
     this.model.upload(title, content, this.uploadAlert)
+
   updateDocumentLink: ()->
-    documentLink = $('#document-link').text(this.model.title)
+    console.log("update_document_link")
+    file = this.model.get("file")
+    if file
+      documentLink = $('#document-link')
+      documentLink.text(file.title)
+      documentLink.attr("href", "https://drive.google.com/file/d/" \
+       + file.id + "/view")
+      documentLink.removeClass("text-muted").addClass("text-primary")
 
-
+  # 上部の通知系
   authorizeAlert: (authResult)->
     if authResult && !authResult.error
       this.alertView.show("success", "Success GoogleDrive authorization")
