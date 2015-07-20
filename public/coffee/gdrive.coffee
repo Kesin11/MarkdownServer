@@ -98,29 +98,33 @@ GDriveModel = Backbone.Model.extend({
           )
     )
 
-  upload: (title, content) ->
+  upload: (title, content, callback) ->
     if this.file == null
-      this.insert(title, content)
+      this.insert(title, content, callback)
     else
-      this.update(title, content)
+      this.update(title, content, callback)
 
-  insert: (title, content) ->
+  insert: (title, content, callback) ->
     that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.insert(title, content, (file)->
         console.log("insert file")
         console.log(file)
         that.file = file
+
+        callback(file, "insert")
         )
     )
 
-  update: (title, content) ->
+  update: (title, content, callback) ->
     that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.update(that.file.id, title, content, (file)->
         console.log("update file")
         console.log(file)
         that.file = file
+
+        callback(file, "update")
         )
     )
 })
@@ -136,12 +140,17 @@ GDriveView = Backbone.View.extend({
   upload: ()->
     content = $('#markdown > div > textarea').val()
     title = $('#markdown > div > [name=title]').val()
-    this.model.upload(title, content)
+    this.model.upload(title, content, this.uploadAlert)
   authorizeAlert: (authResult)->
     if authResult && !authResult.error
       this.alertView.show("success", "Success GoogleDrive authorization")
     else
       this.alertView.show("warning", "Fail GoogleDrive authorization")
+  uploadAlert: (file, method)->
+    if file
+      this.alertView.show("info", "Success " + method + "!")
+    else
+      this.alertView.show("danger", "Fail" + method + "!")
 })
 
 AlertView = Backbone.View.extend({
