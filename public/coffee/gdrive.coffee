@@ -94,10 +94,10 @@ GDriveModel = Backbone.Model.extend({
     )
 
   upload: (title, content, callback) ->
-    if this.file == null
-      this.insert(title, content, callback)
-    else
+    if this.get("file")
       this.update(title, content, callback)
+    else
+      this.insert(title, content, callback)
 
   insert: (title, content, callback) ->
     that = this
@@ -114,7 +114,7 @@ GDriveModel = Backbone.Model.extend({
   update: (title, content, callback) ->
     that = this
     gapi.client.load('drive', 'v2', ->
-      that.gdrive.update(that.file.id, title, content, (file)->
+      that.gdrive.update(that.get("file").id, title, content, (file)->
         console.log("update file")
         console.log(file)
         that.set("file", file)
