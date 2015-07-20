@@ -86,8 +86,8 @@ GDriveModel = Backbone.Model.extend({
         else
           console.log("immediate false")
           gapi.auth.authorize({
-            'client_id': this.gdrive.CLIENT_ID,
-            'scope': this.gdrive.SCOPES,
+            'client_id': that.gdrive.CLIENT_ID,
+            'scope': that.gdrive.SCOPES,
             'immediate': false },
             (authResult)->
               that.authResult = authResult
