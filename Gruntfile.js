@@ -40,6 +40,13 @@ module.exports = function(grunt) {
         livereload: true // 変更があればリロードするよ
       }
     },
+    // init build
+    build: {
+      coffee: {
+          files: ['public/coffee/*.coffee'],
+          tasks: ['coffee'],
+        }
+    }
   });
 
   // Load tasks(grunt実行時に読み込むプラグイン)
@@ -49,4 +56,5 @@ module.exports = function(grunt) {
 
   // Default tasks(grunt実行時に実行するタスク)
   grunt.registerTask('default', ['connect', 'watch']);
+  grunt.registerTask('build', ['coffee']);
 };
