@@ -47,3 +47,6 @@ AlertView = Backbone.View.extend({
 editor  = new Editor()
 editorView = new EditorView({model: editor})
 alertView = new AlertView()
+
+# gapi.loadのコールバックが信用ならないので最初に読み込んでおく
+gapi.load('picker')

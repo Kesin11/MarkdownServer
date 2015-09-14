@@ -29,6 +29,7 @@
         <div id="gdrive">
           <button class="btn btn-default" name="authorize-button">Authorize</button>
           <button class="btn bant-default" name="upload-button">Upload</button>
+          <button class="btn bant-default" name="picker-button">Picker</button>
         </div>
       </div>
       <div id="rendered-html" class="col-md-6 col-sm-6">
@@ -36,11 +37,12 @@
     </div>
 </body>
 <script>GOOGLE_DRIVE_CLIENT_ID = "<%= @GOOGLE_DRIVE_CLIENT_ID %>"</script>
+<script type="text/javascript" src="https://apis.google.com/js/client.js?"></script>
+<script type="text/javascript" src="https://apis.google.com/js/api.js"></script>
 <script type="text/javascript" src="/bower/underscore/underscore-min.js"></script>
 <script type="text/javascript" src="/bower/backbone/backbone-min.js"></script>
 <script type="text/javascript" src="/bower/marked/marked.min.js"></script>
 <script type="text/javascript" src="/bower/autosize/dist/autosize.min.js"></script>
-<script type="text/javascript" src="https://apis.google.com/js/client.js?"></script>
 <script type="text/javascript" src="/js/main.js"></script>
 <script type="text/javascript" src="/js/gdrive.js"></script>
 </html>

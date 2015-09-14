@@ -67,6 +67,8 @@ GDriveModel = Backbone.Model.extend({
   initialize: ()->
     this.gdrive = new GDrive()
     this.file = null
+    this.access_token = null
+    this.set("client_id", this.gdrive.CLIENT_ID)
 
   authorize: (callback)->
     that = this
@@ -81,6 +83,7 @@ GDriveModel = Backbone.Model.extend({
         # 今度はダイアログが開く
         if (authResult && !authResult.error)
           console.log("immediate true")
+          that.set("access_token", authResult.access_token)
           callback(authResult)
         else
           console.log("immediate false")
@@ -128,8 +131,10 @@ GDriveView = Backbone.View.extend({
   events:
     'click [name=authorize-button]': 'gapi_authorize'
     'click [name=upload-button]': 'upload'
+    'click [name=picker-button]': 'createPicker'
   initialize: ()->
     this.listenTo(this.model, 'change', this.updateDocumentLink)
+    # TODO: changeにtitleと中身の更新もバインドしておく
 
   gapi_authorize: ()->
     this.model.authorize(this.authorizeAlert)
@@ -159,6 +164,34 @@ GDriveView = Backbone.View.extend({
       this.alertView.show("info", "Success " + method + "!")
     else
       this.alertView.show("danger", "Fail " + method + "!")
+
+  createPicker: ()->
+    console.log("picker create")
+    this.showPicker(this)
+
+  showPicker: (that)->
+    client_id = that.model.get('client_id')
+    access_token = that.model.get("access_token")
+    if access_token
+      view = new google.picker.View(google.picker.ViewId.DOCS)
+      # 現状何かエラー出ているけど一応使えるのでとりあえず放置
+      picker = new google.picker.PickerBuilder()
+        .addView(view)
+        .setAppId(client_id)
+        .setOAuthToken(access_token)
+        # .setDeveloperKey(developerKey)
+        .setCallback(that.pickerCallback)
+        # .enableFeature(google.picker.Feature.NAV_HIDDEN)
+        # .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
+        .build()
+      console.log(picker)
+      picker.setVisible(true)
+
+  pickerCallback: (data)->
+    if data.action == google.picker.Action.PICKED
+      fileId = data.docs[0].id
+      console.log(data.docs[0])
+      # TODO: idは取れたのでそこから読みだして中身を展開する必要がある
 })
 
 gdriveModel = new GDriveModel()
