@@ -70,7 +70,7 @@ GDriveModel = Backbone.Model.extend({
     this.access_token = null
     this.set("client_id", this.gdrive.CLIENT_ID)
 
-  authorize: (callback)->
+  authorize: (callback, caller)->
     that = this
     return null unless gapi.auth
 
@@ -84,7 +84,7 @@ GDriveModel = Backbone.Model.extend({
         if (authResult && !authResult.error)
           console.log("immediate true")
           that.set("access_token", authResult.access_token)
-          callback(authResult)
+          callback(authResult, caller)
         else
           console.log("immediate false")
           gapi.auth.authorize({
@@ -92,17 +92,17 @@ GDriveModel = Backbone.Model.extend({
             'scope': that.gdrive.SCOPES,
             'immediate': false },
             (authResult)->
-              callback(authResult)
+              callback(authResult, caller)
           )
     )
 
-  upload: (title, content, callback) ->
+  upload: (title, content, callback, caller) ->
     if this.get("file")
-      this.update(title, content, callback)
+      this.update(title, content, callback, caller)
     else
-      this.insert(title, content, callback)
+      this.insert(title, content, callback, caller)
 
-  insert: (title, content, callback) ->
+  insert: (title, content, callback, caller) ->
     that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.insert(title, content, (file)->
@@ -110,11 +110,11 @@ GDriveModel = Backbone.Model.extend({
         console.log(file)
         that.set("file", file)
 
-        callback(file, "insert")
+        callback(file, "insert", caller)
         )
     )
 
-  update: (title, content, callback) ->
+  update: (title, content, callback, caller) ->
     that = this
     gapi.client.load('drive', 'v2', ->
       that.gdrive.update(that.get("file").id, title, content, (file)->
@@ -122,7 +122,7 @@ GDriveModel = Backbone.Model.extend({
         console.log(file)
         that.set("file", file)
 
-        callback(file, "update")
+        callback(file, "update", caller)
         )
     )
 })
@@ -132,16 +132,20 @@ GDriveView = Backbone.View.extend({
     'click [name=authorize-button]': 'gapi_authorize'
     'click [name=upload-button]': 'upload'
     'click [name=picker-button]': 'createPicker'
-  initialize: ()->
+  initialize: (options)->
+    this.alertView = options.alertView # modelなどの特別以外は明示的に受け取る必要がある
+
     this.listenTo(this.model, 'change', this.updateDocumentLink)
     # TODO: changeにtitleと中身の更新もバインドしておく
 
   gapi_authorize: ()->
-    this.model.authorize(this.authorizeAlert)
+    # memo: コールバックで戻ってきたときのauthorizeAlert()で自身のthisを使いたいので渡しておく
+    # このあたりはPromiseを使えばこんなややこしいことしなくても済みそう
+    this.model.authorize(this.authorizeAlert, this)
   upload: ()->
     content = $('#markdown > div > textarea').val()
     title = $('#markdown > div > [name=title]').val()
-    this.model.upload(title, content, this.uploadAlert)
+    this.model.upload(title, content, this.uploadAlert, this)
 
   updateDocumentLink: ()->
     console.log("update_document_link")
@@ -154,16 +158,18 @@ GDriveView = Backbone.View.extend({
       documentLink.removeClass("text-muted").addClass("text-primary")
 
   # 上部の通知系
-  authorizeAlert: (authResult)->
+  # memo: 自身をthis的に使いたいのでcallerとして渡していたものを返してもらう
+  authorizeAlert: (authResult, caller)->
     if authResult && !authResult.error
-      this.alertView.show("success", "Success GoogleDrive authorization")
+      caller.alertView.show("success", "Success GoogleDrive authorization")
     else
-      this.alertView.show("warning", "Fail GoogleDrive authorization")
-  uploadAlert: (file, method)->
+      caller.alertView.show("warning", "Fail GoogleDrive authorization")
+
+  uploadAlert: (file, methodName, caller)->
     if !file.error
-      this.alertView.show("info", "Success " + method + "!")
+      caller.alertView.show("info", "Success " + methodName + "!")
     else
-      this.alertView.show("danger", "Fail " + method + "!")
+      caller.alertView.show("danger", "Fail " + methodName + "!")
 
   createPicker: ()->
     console.log("picker create")
@@ -194,5 +200,7 @@ GDriveView = Backbone.View.extend({
       # TODO: idは取れたのでそこから読みだして中身を展開する必要がある
 })
 
-gdriveModel = new GDriveModel()
-gdriveView = new GDriveView({model: gdriveModel, alertView: alertView})
+module.exports = {
+  GDriveModel: GDriveModel,
+  GDriveView:  GDriveView,
+}
