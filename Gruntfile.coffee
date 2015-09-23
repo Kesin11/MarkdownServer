@@ -29,6 +29,8 @@ module.exports = (grunt) ->
     watch:
       html_files:
         files: ['views/*'] # ウォッチ対象として、ディレクトリ配下の*.htmlを指定
+      js_files:
+        files: ['public/js/*'] # ウォッチ対象として、ディレクトリ配下の*.htmlを指定
       # coffee: {
       #  files: ['public/coffee/*.coffee']
       #  tasks: ['coffee']
