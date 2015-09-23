@@ -66,8 +66,9 @@ class GDrive
 GDriveModel = Backbone.Model.extend({
   initialize: ()->
     this.gdrive = new GDrive()
-    this.file = null
     this.access_token = null
+    this.set('title', '')
+    this.set('content', '')
     this.set("client_id", this.gdrive.CLIENT_ID)
 
   authorize: (callback, caller)->
@@ -97,6 +98,8 @@ GDriveModel = Backbone.Model.extend({
     )
 
   upload: (title, content, callback, caller) ->
+    this.set({title: title, content: content})
+
     if this.get("file")
       this.update(title, content, callback, caller)
     else
@@ -136,7 +139,6 @@ GDriveView = Backbone.View.extend({
     this.alertView = options.alertView # modelなどの特別以外は明示的に受け取る必要がある
 
     this.listenTo(this.model, 'change', this.updateDocumentLink)
-    # TODO: changeにtitleと中身の更新もバインドしておく
 
   gapi_authorize: ()->
     # memo: コールバックで戻ってきたときのauthorizeAlert()で自身のthisを使いたいので渡しておく
