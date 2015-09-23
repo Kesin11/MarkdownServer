@@ -11,23 +11,27 @@ marked.setOptions({
 
 EditorModel = Backbone.Model.extend({
   initialize: ()->
-    this.markdown = ''
+    this.title   = ''
+    this.content = ''
 })
 
 EditorView = Backbone.View.extend({
   el: '#markdown'
   events:
-    'keyup': 'update_model'
+    'keyup': 'updateModel'
+
   initialize: ()->
     this.listenTo(this.model, 'change', this.render)
     autosize(this.$('textarea')) # textareaの自動拡張プラグイン
 
-  update_model: ()->
-    this.model.set({markdown: this.$('[name=raw-text]').val() })
+  updateModel: ()->
+    this.model.set({title: this.$('[name=title]').val() })
+    this.model.set({content: this.$('[name=raw-text]').val() })
+
   render: ()->
-    markdown = this.model.get('markdown')
-    if markdown
-      html = marked(markdown)
+    content = this.model.get('content')
+    if content
+      html = marked(content)
       $('#rendered-html').html(html)
 })
 

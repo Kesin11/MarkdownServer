@@ -3,10 +3,20 @@ gapi.load('picker')
 
 Editor = require('./editor.coffee')
 GDrive = require('./gdrive.coffee')
+ModelHandler = require('./model_handler.coffee')
 
 editorModel = new Editor.EditorModel()
+gdriveModel = new GDrive.GDriveModel()
+modelHandler = new ModelHandler({
+  editorModel: editorModel,
+  gdriveModel: gdriveModel
+})
+
 editorView  = new Editor.EditorView({model: editorModel})
 alertView   = new Editor.AlertView()
 
-gdriveModel = new GDrive.GDriveModel()
-gdriveView  = new GDrive.GDriveView({model: gdriveModel, alertView: alertView})
+gdriveView  = new GDrive.GDriveView({
+  model: gdriveModel,
+  alertView: alertView,
+  modelHandler: modelHandler
+})
