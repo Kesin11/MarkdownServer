@@ -21,18 +21,30 @@ EditorView = Backbone.View.extend({
     'keyup': 'updateModel'
 
   initialize: ()->
+    this.dom = {
+      title: this.$('[name=title]')
+      content: this.$('[name=raw-text]')
+      rendered_html: this.$('#rendered-html')
+    }
     this.listenTo(this.model, 'change', this.render)
     autosize(this.$('textarea')) # textareaの自動拡張プラグイン
 
   updateModel: ()->
-    this.model.set({title: this.$('[name=title]').val() })
-    this.model.set({content: this.$('[name=raw-text]').val() })
+    this.model.set({ title: this.dom.title.val() })
+    this.model.set({ content: this.dom.content.val() })
 
   render: ()->
+    title   = this.model.get('title')
     content = this.model.get('content')
+    # markdown area
     if content
       html = marked(content)
       $('#rendered-html').html(html)
+
+    # text area
+    this.dom.title.val(title)
+    this.dom.content.val(content)
+
 })
 
 AlertView = Backbone.View.extend({

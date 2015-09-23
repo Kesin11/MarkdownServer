@@ -27,8 +27,19 @@ class GDrive
 
     return multipartRequestBody
 
+  get: (fileId, callback) ->
+    request = gapi.client.drive.files.get({
+      'fileId' : fileId
+    })
+    if (!callback)
+      callback = (file) ->
+        console.log(file)
+    request.execute(callback)
+
   insert: (title, content, callback) ->
     multipartRequestBody = this.requestBody(title, content)
+    # memo: gapi.client.requestはpromiseも使えるらしい
+    # https://developers.google.com/api-client-library/javascript/features/promises
     request = gapi.client.request({
       'path': '/upload/drive/v2/files',
       'method': 'POST',
@@ -93,13 +104,20 @@ GDriveModel = Backbone.Model.extend({
             'scope': that.gdrive.SCOPES,
             'immediate': false },
             (authResult)->
+              that.set("access_token", authResult.access_token)
               callback(authResult, caller)
           )
     )
 
-  upload: (title, content, callback, caller) ->
-    this.set({title: title, content: content})
+  get: (fileId, callback) ->
+    that = this
+    that.gdrive.get(fileId, (file)->
+      that.set("file", file)
 
+      callback(file, "get")
+    )
+
+  upload: (title, content, callback) ->
     if this.get("file")
       this.update(title, content, callback, caller)
     else
@@ -147,9 +165,16 @@ GDriveView = Backbone.View.extend({
     this.model.authorize(this.authorizeAlert, this)
 
   upload: ()->
+<<<<<<< Updated upstream
     title = this.model_handler.getEditorTitle()
     content = this.model_handler.getEditorContent()
     this.model.upload(title, content, this.uploadAlert, this)
+=======
+    # TODO: ここはeditorのモデルからもらうようにする
+    content = $('#markdown > div > textarea').val()
+    title = $('#markdown > div > [name=title]').val()
+    this.model.upload(title, content, this.uploadAlert)
+>>>>>>> Stashed changes
 
   updateDocumentLink: ()->
     console.log("update_document_link")
