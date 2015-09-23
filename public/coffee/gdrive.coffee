@@ -27,14 +27,30 @@ class GDrive
 
     return multipartRequestBody
 
+  # metadataのget
   get: (fileId, callback) ->
-    request = gapi.client.drive.files.get({
-      'fileId' : fileId
+    gapi.client.load('drive', 'v2', ->
+      request = gapi.client.drive.files.get({
+        'fileId' : fileId
+      })
+      if (!callback)
+        callback = (file) ->
+          console.log(file)
+      request.execute(callback)
+    )
+
+  # fileの中身のget
+  getFileResource: (downloadUrl, accessToken, callback) ->
+    $.ajax({
+      method: 'GET'
+      url: downloadUrl
+      headers: {
+        'Authorization': 'Bearer ' + accessToken
+      }
     })
-    if (!callback)
-      callback = (file) ->
-        console.log(file)
-    request.execute(callback)
+    .always((data) ->
+      callback(data)
+    )
 
   insert: (title, content, callback) ->
     multipartRequestBody = this.requestBody(title, content)
@@ -77,9 +93,13 @@ class GDrive
 GDriveModel = Backbone.Model.extend({
   initialize: ()->
     this.gdrive = new GDrive()
-    this.access_token = null
-    this.set('title', '')
-    this.set('content', '')
+    this.set({
+      access_token: ''
+      file: null
+      title: ''
+      content: ''
+    })
+
     this.set("client_id", this.gdrive.CLIENT_ID)
 
   authorize: (callback, caller)->
@@ -109,15 +129,25 @@ GDriveModel = Backbone.Model.extend({
           )
     )
 
-  get: (fileId, callback) ->
+  fetchFile: (fileId, callback, caller) ->
     that = this
     that.gdrive.get(fileId, (file)->
       that.set("file", file)
+      that.set('title', file.title)
 
-      callback(file, "get")
+      that.gdrive.getFileResource(
+        file.downloadUrl,
+        that.get('access_token'),
+        (data) ->
+          that.set('content', data)
+      )
+
+      callback(file, caller)
     )
 
-  upload: (title, content, callback) ->
+  upload: (title, content, callback, caller) ->
+    this.set({title: title, content: content})
+
     if this.get("file")
       this.update(title, content, callback, caller)
     else
@@ -125,6 +155,9 @@ GDriveModel = Backbone.Model.extend({
 
   insert: (title, content, callback, caller) ->
     that = this
+    # memo: gapi.client.loadはGDriveオブジェクトの方に移したい
+    # さらにclient.loadはcallback無しのときにpromiseが返るらしい
+    # https://developers.google.com/api-client-library/javascript/reference/referencedocs
     gapi.client.load('drive', 'v2', ->
       that.gdrive.insert(title, content, (file)->
         console.log("insert file")
@@ -152,7 +185,7 @@ GDriveView = Backbone.View.extend({
   events:
     'click [name=authorize-button]': 'gapi_authorize'
     'click [name=upload-button]': 'upload'
-    'click [name=picker-button]': 'createPicker'
+    'click [name=picker-button]': 'showPicker'
   initialize: (options)->
     this.alertView = options.alertView # modelなどの特別以外は明示的に受け取る必要がある
     this.model_handler = options.modelHandler
@@ -165,16 +198,9 @@ GDriveView = Backbone.View.extend({
     this.model.authorize(this.authorizeAlert, this)
 
   upload: ()->
-<<<<<<< Updated upstream
     title = this.model_handler.getEditorTitle()
     content = this.model_handler.getEditorContent()
-    this.model.upload(title, content, this.uploadAlert, this)
-=======
-    # TODO: ここはeditorのモデルからもらうようにする
-    content = $('#markdown > div > textarea').val()
-    title = $('#markdown > div > [name=title]').val()
-    this.model.upload(title, content, this.uploadAlert)
->>>>>>> Stashed changes
+    this.model.upload(title, content, this.uploadFileAlert, this)
 
   updateDocumentLink: ()->
     console.log("update_document_link")
@@ -182,6 +208,7 @@ GDriveView = Backbone.View.extend({
     if file
       documentLink = $('#document-link')
       documentLink.text(file.title)
+      # TODO: file.alternateLinkで同じアドレス取れそう
       documentLink.attr("href", "https://drive.google.com/file/d/" \
        + file.id + "/view")
       documentLink.removeClass("text-muted").addClass("text-primary")
@@ -194,17 +221,18 @@ GDriveView = Backbone.View.extend({
     else
       caller.alertView.show("warning", "Fail GoogleDrive authorization")
 
-  uploadAlert: (file, methodName, caller)->
+  uploadFileAlert: (file, methodName, caller)->
     if !file.error
       caller.alertView.show("info", "Success " + methodName + "!")
     else
       caller.alertView.show("danger", "Fail " + methodName + "!")
 
-  createPicker: ()->
-    console.log("picker create")
-    this.showPicker(this)
+  fetchFileAlert: (file, caller)->
+    if !file.error
+      caller.alertView.show("info", "Success " + "fetch" + "!")
 
-  showPicker: (that)->
+  showPicker: ()->
+    that = this
     client_id = that.model.get('client_id')
     access_token = that.model.get("access_token")
     if access_token
@@ -214,19 +242,17 @@ GDriveView = Backbone.View.extend({
         .addView(view)
         .setAppId(client_id)
         .setOAuthToken(access_token)
+        .setCallback((data) ->
+          if data.action == google.picker.Action.PICKED
+            fileId = data.docs[0].id
+            that.model.fetchFile(fileId, that.fetchFileAlert, that)
+        )
         # .setDeveloperKey(developerKey)
-        .setCallback(that.pickerCallback)
         # .enableFeature(google.picker.Feature.NAV_HIDDEN)
         # .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
         .build()
       console.log(picker)
       picker.setVisible(true)
-
-  pickerCallback: (data)->
-    if data.action == google.picker.Action.PICKED
-      fileId = data.docs[0].id
-      console.log(data.docs[0])
-      # TODO: idは取れたのでそこから読みだして中身を展開する必要がある
 })
 
 module.exports = {
