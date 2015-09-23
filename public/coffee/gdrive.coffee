@@ -137,6 +137,7 @@ GDriveView = Backbone.View.extend({
     'click [name=picker-button]': 'createPicker'
   initialize: (options)->
     this.alertView = options.alertView # modelなどの特別以外は明示的に受け取る必要がある
+    this.model_handler = options.modelHandler
 
     this.listenTo(this.model, 'change', this.updateDocumentLink)
 
@@ -144,9 +145,10 @@ GDriveView = Backbone.View.extend({
     # memo: コールバックで戻ってきたときのauthorizeAlert()で自身のthisを使いたいので渡しておく
     # このあたりはPromiseを使えばこんなややこしいことしなくても済みそう
     this.model.authorize(this.authorizeAlert, this)
+
   upload: ()->
-    content = $('#markdown > div > textarea').val()
-    title = $('#markdown > div > [name=title]').val()
+    title = this.model_handler.getEditorTitle()
+    content = this.model_handler.getEditorContent()
     this.model.upload(title, content, this.uploadAlert, this)
 
   updateDocumentLink: ()->
