@@ -28,35 +28,29 @@ class GDrive
     return multipartRequestBody
 
   # metadataのget
-  get: (fileId, callback) ->
-    gapi.client.load('drive', 'v2', ->
-      request = gapi.client.drive.files.get({
-        'fileId' : fileId
-      })
-      if (!callback)
-        callback = (file) ->
-          console.log(file)
-      request.execute(callback)
-    )
+  get: (fileId) ->
+    return gapi.client.load('drive', 'v2')
+      .then () ->
+        gapi.client.drive.files.get({ 'fileId' : fileId })
+      .then (response) -> Promise.resolve(response.result)
 
   # fileの中身のget
-  getFileResource: (downloadUrl, accessToken, callback) ->
-    $.ajax({
-      method: 'GET'
-      url: downloadUrl
-      headers: {
-        'Authorization': 'Bearer ' + accessToken
-      }
-    })
-    .always((data) ->
-      callback(data)
+  getFileResource: (downloadUrl, accessToken) ->
+    # $.ajaxをPromiseにcast
+    return Promise.resolve(
+      $.ajax({
+        method: 'GET'
+        url: downloadUrl
+        headers: {
+          'Authorization': 'Bearer ' + accessToken
+        }
+      })
     )
 
-  insert: (title, content, callback) ->
+  insert: (title, content) ->
     multipartRequestBody = this.requestBody(title, content)
-    # memo: gapi.client.requestはpromiseも使えるらしい
-    # https://developers.google.com/api-client-library/javascript/features/promises
-    request = gapi.client.request({
+    # Promise互換を返す
+    return gapi.client.request({
       'path': '/upload/drive/v2/files',
       'method': 'POST',
       'params': {'uploadType': 'multipart'},
@@ -65,15 +59,10 @@ class GDrive
         this.BOUNDARY + '"'
       },
       'body': multipartRequestBody})
-    if (!callback)
-      callback = (file) ->
-        console.log(file)
-    request.execute(callback)
 
-  update: (fileId, title, content, callback) ->
-    console.log('update file')
+  update: (fileId, title, content) ->
     multipartRequestBody = this.requestBody(title, content)
-    request = gapi.client.request({
+    return gapi.client.request({
       'path': '/upload/drive/v2/files/' + fileId,
       'method': 'PUT',
       'params': {'uploadType': 'multipart'},
@@ -82,10 +71,6 @@ class GDrive
         this.BOUNDARY + '"'
       },
       'body': multipartRequestBody})
-    if (!callback)
-      callback = (file) ->
-        console.log(file)
-    request.execute(callback)
 
   utf8_to_b64: (str) ->
     window.btoa( unescape(encodeURIComponent( str ) ) )
@@ -102,105 +87,119 @@ GDriveModel = Backbone.Model.extend({
 
     this.set("client_id", this.gdrive.CLIENT_ID)
 
-  authorize: (callback, caller)->
+  authorize: ()->
     that = this
-    return null unless gapi.auth
+    return new Promise((resolve, reject) ->
+      reject(null) unless gapi.auth
 
-    gapi.auth.authorize({
-      'client_id': this.gdrive.CLIENT_ID,
-      'scope': this.gdrive.SCOPES,
-      'immediate': true },
-      (authResult)->
-        # immediate: trueが失敗したときはflaseで再チャレンジ
-        # 今度はダイアログが開く
-        if (authResult && !authResult.error)
-          console.log("immediate true")
-          that.set("access_token", authResult.access_token)
-          callback(authResult, caller)
-        else
-          console.log("immediate false")
-          gapi.auth.authorize({
-            'client_id': that.gdrive.CLIENT_ID,
-            'scope': that.gdrive.SCOPES,
-            'immediate': false },
-            (authResult)->
-              that.set("access_token", authResult.access_token)
-              callback(authResult, caller)
-          )
+      gapi.auth.authorize({
+        'client_id': that.gdrive.CLIENT_ID,
+        'scope': that.gdrive.SCOPES,
+        'immediate': true },
+        (authResult)->
+          # immediate: trueが失敗したときはflaseで再チャレンジ
+          # 今度はダイアログが開く
+          if (authResult && !authResult.error)
+            console.log("immediate true")
+            that.set("access_token", authResult.access_token)
+            resolve(authResult)
+          else
+            console.log("immediate false")
+            gapi.auth.authorize({
+              'client_id': that.gdrive.CLIENT_ID,
+              'scope': that.gdrive.SCOPES,
+              'immediate': false },
+              (authResult)->
+                if (authResult && !authResult.error)
+                  that.set("access_token", authResult.access_token)
+                  resolve(authResult)
+                else
+                  console.log("authorize failed")
+                  reject(authResult)
+            )
+        )
     )
 
-  fetchFile: (fileId, callback, caller) ->
+  fetchFile: (fileId) ->
     that = this
-    that.gdrive.get(fileId, (file)->
-      that.set("file", file)
-      that.set('title', file.title)
+    return new Promise((resolve, reject) ->
+      that.gdrive.get(fileId)
+        .then (file) ->
+          that.set("file", file)
+          that.set('title', file.title)
 
-      that.gdrive.getFileResource(
-        file.downloadUrl,
-        that.get('access_token'),
-        (data) ->
-          that.set('content', data)
+          that.gdrive.getFileResource(
+            file.downloadUrl,
+            that.get('access_token')
+          )
+        .then (fileContent) ->
+          that.set('content', fileContent)
+          resolve(fileContent)
       )
 
-      callback(file, caller)
-    )
-
-  upload: (title, content, callback, caller) ->
+  upload: (title, content) ->
     this.set({title: title, content: content})
 
     if this.get("file")
-      this.update(title, content, callback, caller)
+      this.update(title, content)
+      return Promise.resolve('update')
     else
-      this.insert(title, content, callback, caller)
+      this.insert(title, content)
+      return Promise.resolve('insert')
 
-  insert: (title, content, callback, caller) ->
+  insert: (title, content) ->
     that = this
-    # memo: gapi.client.loadはGDriveオブジェクトの方に移したい
-    # さらにclient.loadはcallback無しのときにpromiseが返るらしい
-    # https://developers.google.com/api-client-library/javascript/reference/referencedocs
-    gapi.client.load('drive', 'v2', ->
-      that.gdrive.insert(title, content, (file)->
+    gapi.client.load('drive', 'v2')
+      .then () -> that.gdrive.insert(title, content)
+      .then (response) ->
         console.log("insert file")
-        console.log(file)
-        that.set("file", file)
+        console.log(response.result)
+        that.set("file", response.result)
 
-        callback(file, "insert", caller)
-        )
-    )
+        Promise.resolve(response.result)
 
-  update: (title, content, callback, caller) ->
+  update: (title, content) ->
     that = this
-    gapi.client.load('drive', 'v2', ->
-      that.gdrive.update(that.get("file").id, title, content, (file)->
+    fileId = that.get('file').id
+    gapi.client.load('drive', 'v2')
+      .then () -> that.gdrive.update(fileId, title, content)
+      .then (response) ->
         console.log("update file")
-        console.log(file)
-        that.set("file", file)
+        console.log(response.result)
+        that.set("file", response.result)
 
-        callback(file, "update", caller)
-        )
-    )
+        Promise.resolve(response.result)
 })
+
 GDriveView = Backbone.View.extend({
   el: '#gdrive'
   events:
     'click [name=authorize-button]': 'gapi_authorize'
     'click [name=upload-button]': 'upload'
     'click [name=picker-button]': 'showPicker'
+
   initialize: (options)->
     this.alertView = options.alertView # modelなどの特別以外は明示的に受け取る必要がある
     this.model_handler = options.modelHandler
 
-    this.listenTo(this.model, 'change', this.updateDocumentLink)
+    this.listenTo(this.model, 'change:file', this.updateDocumentLink)
 
   gapi_authorize: ()->
-    # memo: コールバックで戻ってきたときのauthorizeAlert()で自身のthisを使いたいので渡しておく
-    # このあたりはPromiseを使えばこんなややこしいことしなくても済みそう
-    this.model.authorize(this.authorizeAlert, this)
+    this.model.authorize()
+      .then () =>
+        this.alertView.show("success", "Success GoogleDrive authorization")
+      .catch () =>
+        this.alertView.show("warning", "Fail GoogleDrive authorization")
 
   upload: ()->
     title = this.model_handler.getEditorTitle()
     content = this.model_handler.getEditorContent()
-    this.model.upload(title, content, this.uploadFileAlert, this)
+
+    this.model.upload(title, content)
+      .then (methodName) =>
+        this.alertView.show("info", "Success " + methodName + "!")
+      .catch (methodName) =>
+        this.alertView.show("danger", "Fail " + methodName + "!")
 
   updateDocumentLink: ()->
     console.log("update_document_link")
@@ -208,28 +207,8 @@ GDriveView = Backbone.View.extend({
     if file
       documentLink = $('#document-link')
       documentLink.text(file.title)
-      # TODO: file.alternateLinkで同じアドレス取れそう
-      documentLink.attr("href", "https://drive.google.com/file/d/" \
-       + file.id + "/view")
+      documentLink.attr("href", file.alternateLink)
       documentLink.removeClass("text-muted").addClass("text-primary")
-
-  # 上部の通知系
-  # memo: 自身をthis的に使いたいのでcallerとして渡していたものを返してもらう
-  authorizeAlert: (authResult, caller)->
-    if authResult && !authResult.error
-      caller.alertView.show("success", "Success GoogleDrive authorization")
-    else
-      caller.alertView.show("warning", "Fail GoogleDrive authorization")
-
-  uploadFileAlert: (file, methodName, caller)->
-    if !file.error
-      caller.alertView.show("info", "Success " + methodName + "!")
-    else
-      caller.alertView.show("danger", "Fail " + methodName + "!")
-
-  fetchFileAlert: (file, caller)->
-    if !file.error
-      caller.alertView.show("info", "Success " + "fetch" + "!")
 
   showPicker: ()->
     that = this
@@ -242,16 +221,19 @@ GDriveView = Backbone.View.extend({
         .addView(view)
         .setAppId(client_id)
         .setOAuthToken(access_token)
-        .setCallback((data) ->
+        .setCallback((data) =>
           if data.action == google.picker.Action.PICKED
             fileId = data.docs[0].id
-            that.model.fetchFile(fileId, that.fetchFileAlert, that)
+            this.model.fetchFile(fileId)
+              .then () =>
+                this.alertView.show("info", "Success fetch!")
+              .catch () =>
+                this.alertView.show("danger", "Fail fetch!")
         )
         # .setDeveloperKey(developerKey)
         # .enableFeature(google.picker.Feature.NAV_HIDDEN)
         # .enableFeature(google.picker.Feature.MULTISELECT_ENABLED)
         .build()
-      console.log(picker)
       picker.setVisible(true)
 })
 
