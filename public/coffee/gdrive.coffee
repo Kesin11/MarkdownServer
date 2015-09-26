@@ -102,31 +102,37 @@ GDriveModel = Backbone.Model.extend({
 
     this.set("client_id", this.gdrive.CLIENT_ID)
 
-  authorize: (callback, caller)->
+  authorize: ()->
     that = this
-    return null unless gapi.auth
+    return new Promise((resolve, reject) ->
+      reject(null) unless gapi.auth
 
-    gapi.auth.authorize({
-      'client_id': this.gdrive.CLIENT_ID,
-      'scope': this.gdrive.SCOPES,
-      'immediate': true },
-      (authResult)->
-        # immediate: trueが失敗したときはflaseで再チャレンジ
-        # 今度はダイアログが開く
-        if (authResult && !authResult.error)
-          console.log("immediate true")
-          that.set("access_token", authResult.access_token)
-          callback(authResult, caller)
-        else
-          console.log("immediate false")
-          gapi.auth.authorize({
-            'client_id': that.gdrive.CLIENT_ID,
-            'scope': that.gdrive.SCOPES,
-            'immediate': false },
-            (authResult)->
-              that.set("access_token", authResult.access_token)
-              callback(authResult, caller)
-          )
+      gapi.auth.authorize({
+        'client_id': that.gdrive.CLIENT_ID,
+        'scope': that.gdrive.SCOPES,
+        'immediate': true },
+        (authResult)->
+          # immediate: trueが失敗したときはflaseで再チャレンジ
+          # 今度はダイアログが開く
+          if (authResult && !authResult.error)
+            console.log("immediate true")
+            that.set("access_token", authResult.access_token)
+            resolve(authResult)
+          else
+            console.log("immediate false")
+            gapi.auth.authorize({
+              'client_id': that.gdrive.CLIENT_ID,
+              'scope': that.gdrive.SCOPES,
+              'immediate': false },
+              (authResult)->
+                if (authResult && !authResult.error)
+                  that.set("access_token", authResult.access_token)
+                  resolve(authResult)
+                else
+                  console.log("authorize failed")
+                  reject(authResult)
+            )
+        )
     )
 
   fetchFile: (fileId, callback, caller) ->
@@ -195,7 +201,11 @@ GDriveView = Backbone.View.extend({
   gapi_authorize: ()->
     # memo: コールバックで戻ってきたときのauthorizeAlert()で自身のthisを使いたいので渡しておく
     # このあたりはPromiseを使えばこんなややこしいことしなくても済みそう
-    this.model.authorize(this.authorizeAlert, this)
+    this.model.authorize()
+      .then () =>
+        this.alertView.show("success", "Success GoogleDrive authorization")
+      .catch () =>
+        this.alertView.show("warning", "Fail GoogleDrive authorization")
 
   upload: ()->
     title = this.model_handler.getEditorTitle()
@@ -212,14 +222,6 @@ GDriveView = Backbone.View.extend({
       documentLink.attr("href", "https://drive.google.com/file/d/" \
        + file.id + "/view")
       documentLink.removeClass("text-muted").addClass("text-primary")
-
-  # 上部の通知系
-  # memo: 自身をthis的に使いたいのでcallerとして渡していたものを返してもらう
-  authorizeAlert: (authResult, caller)->
-    if authResult && !authResult.error
-      caller.alertView.show("success", "Success GoogleDrive authorization")
-    else
-      caller.alertView.show("warning", "Fail GoogleDrive authorization")
 
   uploadFileAlert: (file, methodName, caller)->
     if !file.error
