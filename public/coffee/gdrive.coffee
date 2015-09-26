@@ -65,10 +65,9 @@ class GDrive
       },
       'body': multipartRequestBody})
 
-  update: (fileId, title, content, callback) ->
-    console.log('update file')
+  update: (fileId, title, content) ->
     multipartRequestBody = this.requestBody(title, content)
-    request = gapi.client.request({
+    return gapi.client.request({
       'path': '/upload/drive/v2/files/' + fileId,
       'method': 'PUT',
       'params': {'uploadType': 'multipart'},
@@ -77,10 +76,6 @@ class GDrive
         this.BOUNDARY + '"'
       },
       'body': multipartRequestBody})
-    if (!callback)
-      callback = (file) ->
-        console.log(file)
-    request.execute(callback)
 
   utf8_to_b64: (str) ->
     window.btoa( unescape(encodeURIComponent( str ) ) )
@@ -151,10 +146,10 @@ GDriveModel = Backbone.Model.extend({
 
     if this.get("file")
       this.update(title, content)
-      Promise.resolve('update')
+      return Promise.resolve('update')
     else
       this.insert(title, content)
-      Promise.resolve('insert')
+      return Promise.resolve('insert')
 
   insert: (title, content) ->
     that = this
@@ -167,18 +162,19 @@ GDriveModel = Backbone.Model.extend({
 
         Promise.resolve(response.result)
 
-  update: (title, content, callback, caller) ->
+  update: (title, content) ->
     that = this
-    gapi.client.load('drive', 'v2', ->
-      that.gdrive.update(that.get("file").id, title, content, (file)->
+    fileId = that.get('file').id
+    gapi.client.load('drive', 'v2')
+      .then () -> that.gdrive.update(fileId, title, content)
+      .then (response) ->
         console.log("update file")
-        console.log(file)
-        that.set("file", file)
+        console.log(response.result)
+        that.set("file", response.result)
 
-        callback(file, "update", caller)
-        )
-    )
+        Promise.resolve(response.result)
 })
+
 GDriveView = Backbone.View.extend({
   el: '#gdrive'
   events:
