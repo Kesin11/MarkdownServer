@@ -88,30 +88,29 @@ GDriveModel = Backbone.Model.extend({
     this.set("client_id", this.gdrive.CLIENT_ID)
 
   authorize: ()->
-    that = this
-    return new Promise((resolve, reject) ->
+    return new Promise((resolve, reject) =>
       reject(null) unless gapi.auth
 
       gapi.auth.authorize({
-        'client_id': that.gdrive.CLIENT_ID,
-        'scope': that.gdrive.SCOPES,
+        'client_id': this.gdrive.CLIENT_ID,
+        'scope': this.gdrive.SCOPES,
         'immediate': true },
-        (authResult)->
+        (authResult) =>
           # immediate: trueが失敗したときはflaseで再チャレンジ
           # 今度はダイアログが開く
           if (authResult && !authResult.error)
             console.log("immediate true")
-            that.set("access_token", authResult.access_token)
+            this.set("access_token", authResult.access_token)
             resolve(authResult)
           else
             console.log("immediate false")
             gapi.auth.authorize({
-              'client_id': that.gdrive.CLIENT_ID,
-              'scope': that.gdrive.SCOPES,
+              'client_id': this.gdrive.CLIENT_ID,
+              'scope': this.gdrive.SCOPES,
               'immediate': false },
-              (authResult)->
+              (authResult) =>
                 if (authResult && !authResult.error)
-                  that.set("access_token", authResult.access_token)
+                  this.set("access_token", authResult.access_token)
                   resolve(authResult)
                 else
                   console.log("authorize failed")
@@ -121,19 +120,18 @@ GDriveModel = Backbone.Model.extend({
     )
 
   fetchFile: (fileId) ->
-    that = this
-    return new Promise((resolve, reject) ->
-      that.gdrive.get(fileId)
-        .then (file) ->
-          that.set("file", file)
-          that.set('title', file.title)
+    return new Promise((resolve, reject) =>
+      this.gdrive.get(fileId)
+        .then (file) =>
+          this.set("file", file)
+          this.set('title', file.title)
 
-          that.gdrive.getFileResource(
+          this.gdrive.getFileResource(
             file.downloadUrl,
-            that.get('access_token')
+            this.get('access_token')
           )
-        .then (fileContent) ->
-          that.set('content', fileContent)
+        .then (fileContent) =>
+          this.set('content', fileContent)
           resolve(fileContent)
       )
 
@@ -148,25 +146,23 @@ GDriveModel = Backbone.Model.extend({
       return Promise.resolve('insert')
 
   insert: (title, content) ->
-    that = this
     gapi.client.load('drive', 'v2')
-      .then () -> that.gdrive.insert(title, content)
-      .then (response) ->
+      .then () => this.gdrive.insert(title, content)
+      .then (response) =>
         console.log("insert file")
         console.log(response.result)
-        that.set("file", response.result)
+        this.set("file", response.result)
 
         Promise.resolve(response.result)
 
   update: (title, content) ->
-    that = this
-    fileId = that.get('file').id
+    fileId = this.get('file').id
     gapi.client.load('drive', 'v2')
-      .then () -> that.gdrive.update(fileId, title, content)
-      .then (response) ->
+      .then () => this.gdrive.update(fileId, title, content)
+      .then (response) =>
         console.log("update file")
         console.log(response.result)
-        that.set("file", response.result)
+        this.set("file", response.result)
 
         Promise.resolve(response.result)
 })
@@ -211,9 +207,8 @@ GDriveView = Backbone.View.extend({
       documentLink.removeClass("text-muted").addClass("text-primary")
 
   showPicker: ()->
-    that = this
-    client_id = that.model.get('client_id')
-    access_token = that.model.get("access_token")
+    client_id = this.model.get('client_id')
+    access_token = this.model.get("access_token")
     if access_token
       view = new google.picker.View(google.picker.ViewId.DOCS)
       # 現状何かエラー出ているけど一応使えるのでとりあえず放置
